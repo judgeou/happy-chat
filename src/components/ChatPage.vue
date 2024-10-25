@@ -307,6 +307,7 @@ function deleteMessageItem (msg: ChatMessage) {
 
       <n-space :justify="'center'">
         <n-input type="password" placeholder="API Key" v-model:value="apikey" ></n-input>
+        <a href="https://bailian.console.aliyun.com/?apiKey=1#/api-key" target="_blank">获取 API KEY</a>
       </n-space>
 
       <n-space :justify="'center'">
