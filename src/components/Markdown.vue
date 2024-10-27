@@ -15,6 +15,7 @@ const el = ref<HTMLDivElement>()
 const hljslangLoaderMap = {
   'javascript': () => import('highlight.js/lib/languages/javascript'),
   'typescript': () => import('highlight.js/lib/languages/typescript'),
+  'ts': () => import('highlight.js/lib/languages/typescript'),
   'json': () => import('highlight.js/lib/languages/json'),
   'bash': () => import('highlight.js/lib/languages/bash'),
   'python': () => import('highlight.js/lib/languages/python'),

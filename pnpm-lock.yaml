@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@types/lodash':
+    specifier: ^4.17.12
+    version: 4.17.12
   '@vicons/fa':
     specifier: ^0.12.0
     version: 0.12.0
@@ -17,6 +20,9 @@ dependencies:
   highlight.js:
     specifier: ^11.7.0
     version: 11.7.0
+  lodash:
+    specifier: ^4.17.21
+    version: 4.17.21
   markdown-it-latex:
     specifier: ^0.2.0
     version: 0.2.0

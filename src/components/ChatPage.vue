@@ -126,8 +126,12 @@ async function chatComplete () {
     messages.push({
       role: 'assistant',
       content: '',
-      model: model.value
+      model: model.value,
+      total_tokens: 0
     })
+    const msg = messages[messages.length - 1]
+    let content = ''
+    let lastUpdateTime = Date.now()
     
     while (1) {
       const read_result = await reader?.read()
@@ -145,17 +149,21 @@ async function chatComplete () {
           const json = JSON.parse(text_body)
           const { choices, usage } = json
           const [ cho ] = choices
-          const msg = messages[messages.length - 1]
           
           if (cho) {
             const { delta } = cho
           
             if (delta.content) {
-              msg.content += delta.content
+              content += delta.content
 
-              await nextTick()
-              if (main_content.value) {
-                main_content.value.scrollTop = main_content.value?.scrollHeight
+              if (Date.now() - lastUpdateTime > 1000) {
+                lastUpdateTime = Date.now()
+                
+                msg.content = content
+                await nextTick()
+                if (main_content.value) {
+                  main_content.value.scrollTop = main_content.value?.scrollHeight
+                }
               }
             }
           } else if (usage) {
@@ -171,6 +179,7 @@ async function chatComplete () {
 
     }
 
+    msg.content = content
     isChating.value = false
     saveMessages()
 
