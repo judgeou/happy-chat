@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NInput, NGrid, NGi, NButton, NCard, NInputGroup, NSpace, NLayout, NLayoutFooter, NModal, NList, NListItem, NScrollbar, NSkeleton, NSelect, NInputNumber, NFlex, useMessage } from 'naive-ui'
+import { NCheckbox, NInput, NGrid, NGi, NButton, NCard, NInputGroup, NSpace, NLayout, NLayoutFooter, NModal, NList, NListItem, NScrollbar, NSkeleton, NSelect, NInputNumber, NFlex, useMessage } from 'naive-ui'
 import { reactive, ref, nextTick, computed, watch, Ref } from 'vue'
 import { TrashAlt, CopyRegular, Sync } from '@vicons/fa'
 import { Icon } from '@vicons/utils'
@@ -34,6 +34,7 @@ const historyFilterWord = ref('')
 const model = ref('qwen2.5-72b-instruct')
 const max_message_number = ref(5)
 const apikey = load_from_localstorage('BAILIAN_API_KEY', ''); watch_save_to_localstorage('BAILIAN_API_KEY', apikey)
+const autoscroll = load_from_localstorage_boolean('AUTO_SCROLL', true); watch_save_to_localstorage('AUTO_SCROLL', autoscroll)
 
 let es: EventSource
 let messagesId = nanoid()
@@ -44,12 +45,18 @@ const messagesHistoryFiltered = computed(() => {
     return msg[0].content.includes(historyFilterWord.value)
   }).slice(0, 100)
 })
-const canRetry = computed(() => {
-  return messages.length > 0
-})
 
 function load_from_localstorage (name: string, defaultValue: string) {
   return ref(localStorage.getItem('HAPPY_CHAT_WEBAPP_' + name) || defaultValue)
+}
+
+function load_from_localstorage_boolean (name: string, defaultValue: boolean) {
+  const v = localStorage.getItem('HAPPY_CHAT_WEBAPP_' + name)
+  if (v === null) {
+    return ref(defaultValue)
+  } else {
+    return ref('true' === v)
+  }
 }
 
 function watch_save_to_localstorage (name: string, ref_obj: Ref) {
@@ -163,7 +170,7 @@ async function chatComplete () {
                 
                 msg.content = content
                 await nextTick()
-                if (main_content.value) {
+                if (autoscroll.value && main_content.value) {
                   main_content.value.scrollTop = main_content.value?.scrollHeight
                 }
               }
@@ -323,6 +330,10 @@ function deleteMessageItem (msg: ChatMessage) {
 
       <n-space :justify="'center'">
         <n-input-number style="" placeholder="最大上下文个数，默认：5" :show-button="false" v-model:value="max_message_number"></n-input-number>
+      </n-space>
+      
+      <n-space :justify="'center'">
+        <n-checkbox v-model:checked="autoscroll">消息自动滚动</n-checkbox>
       </n-space>
     </n-space>
 
