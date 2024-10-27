@@ -105,6 +105,14 @@ async function chatComplete () {
         content: msg.content
       }
     })
+    
+    messages.push({
+      role: 'assistant',
+      content: '',
+      model: model.value,
+      total_tokens: 0
+    })
+    
     const res = await fetch(`https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions`, {
       method: 'POST',
       headers: {
@@ -123,15 +131,9 @@ async function chatComplete () {
     const reader = res.body?.getReader()
     const decoder = new TextDecoder('utf-8')
 
-    messages.push({
-      role: 'assistant',
-      content: '',
-      model: model.value,
-      total_tokens: 0
-    })
     const msg = messages[messages.length - 1]
     let content = ''
-    let lastUpdateTime = Date.now()
+    let lastUpdateTime = 0
     
     while (1) {
       const read_result = await reader?.read()
@@ -156,7 +158,7 @@ async function chatComplete () {
             if (delta.content) {
               content += delta.content
 
-              if (Date.now() - lastUpdateTime > 1000) {
+              if (Date.now() - lastUpdateTime > 500) {
                 lastUpdateTime = Date.now()
                 
                 msg.content = content
@@ -336,7 +338,7 @@ function deleteMessageItem (msg: ChatMessage) {
               </n-space>
               
               <div v-if="msg.content.length === 0">
-                <n-skeleton text :repeat="2" :width="'200px'"></n-skeleton>
+                <n-skeleton text :repeat="4" :width="'170px'"></n-skeleton>
               </div>
               <Markdown v-if="msg.role === 'assistant'" class="message-item" :source="msg.content"></Markdown>
               <div v-if="msg.role == 'user'" class="message-item">
@@ -364,16 +366,13 @@ function deleteMessageItem (msg: ChatMessage) {
           </NCard>
         </n-gi>
 
-        <n-gi v-if="isChating && messages[messages.length - 1].role === 'user'" :span="24">
+        <!-- <n-gi v-if="isChating && messages[messages.length - 1].role === 'user'" :span="24">
           <NCard :size="'small'">
             <n-space :wrap="false" :justify="'start'" :size="'large'">
-              <p>
-                <Icon class="role"><IconOpenAI></IconOpenAI></Icon>
-              </p>
               <n-skeleton :width="400" text :repeat="4"></n-skeleton>
             </n-space>
           </NCard>
-        </n-gi>
+        </n-gi> -->
       </n-grid>
     </div>
 
