@@ -36,7 +36,6 @@ const max_message_number = ref(5)
 const apikey = load_from_localstorage('BAILIAN_API_KEY', ''); watch_save_to_localstorage('BAILIAN_API_KEY', apikey)
 const autoscroll = load_from_localstorage_boolean('AUTO_SCROLL', true); watch_save_to_localstorage('AUTO_SCROLL', autoscroll)
 
-let es: EventSource
 let messagesId = nanoid()
 
 const messagesHistoryFiltered = computed(() => {
@@ -134,6 +133,10 @@ async function chatComplete () {
         stream_options: {"include_usage": true}
       })
     })
+
+    if (main_content.value) {
+      main_content.value.scrollTop = main_content.value?.scrollHeight
+    }
     
     const reader = res.body?.getReader()
     const decoder = new TextDecoder('utf-8')
@@ -191,17 +194,17 @@ async function chatComplete () {
     msg.content = content
     isChating.value = false
     saveMessages()
-
+    await nextTick()
+    if (main_content.value) {
+      main_content.value.scrollTop = main_content.value?.scrollHeight
+    }
   } catch (err) {
     isChating.value = false
   }
 }
 
 async function stop () {
-  if (es) {
-    es.close()
-    isChating.value = false
-  }
+
 }
 
 function readMessages () {
