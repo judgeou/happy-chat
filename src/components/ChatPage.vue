@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { NCheckbox, NInput, NGrid, NGi, NButton, NCard, NInputGroup, NSpace, NLayout, NLayoutFooter, NModal, NList, NListItem, NScrollbar, NSkeleton, NSelect, NInputNumber, NFlex, useMessage } from 'naive-ui'
 import { reactive, ref, nextTick, computed, watch, Ref } from 'vue'
-import { TrashAlt, CopyRegular, Sync } from '@vicons/fa'
+import { TrashAlt, CopyRegular, Sync, CodeBranch } from '@vicons/fa'
 import { Icon } from '@vicons/utils'
 import IconOpenAI from '../assets/openai.vue'
 import { nanoid } from 'nanoid'
@@ -275,6 +275,12 @@ function retry (msg: ChatMessage) {
   chatComplete()
 }
 
+function fork (msg: ChatMessage) {
+  const index = messages.indexOf(msg)
+  messages.splice(index + 1)
+  messagesId = nanoid()
+}
+
 function deleteMessageItem (msg: ChatMessage) {
   const index = messages.indexOf(msg)
   messages.splice(index, 1)
@@ -371,6 +377,10 @@ function deleteMessageItem (msg: ChatMessage) {
               
               <n-button ghost size="small" @click="copyMessageItem(msg)">
                 <Icon><CopyRegular></CopyRegular></Icon>
+              </n-button>
+
+              <n-button v-if="msg.role === 'assistant'" ghost size="small" @click="fork(msg)">
+                <Icon><CodeBranch></CodeBranch></Icon>
               </n-button>
 
               <n-button v-if="msg.role === 'assistant'" ghost size="small" @click="retry(msg)">
