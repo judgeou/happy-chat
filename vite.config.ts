@@ -22,8 +22,7 @@ export default defineConfig({
         manualChunks: {
           vue: ['vue'],
           'naive-ui': ['naive-ui'],
-          'nanoid': ['nanoid'],
-          'highlight.js': ['highlight.js']
+          'lib': ['nanoid', 'highlight.js', 'marked', './src/assets/katex/katex.mjs']
         }
       }
     }
