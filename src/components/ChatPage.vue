@@ -37,6 +37,7 @@ const apikey = load_from_localstorage('BAILIAN_API_KEY', ''); watch_save_to_loca
 const autoscroll = load_from_localstorage_boolean('AUTO_SCROLL', true); watch_save_to_localstorage('AUTO_SCROLL', autoscroll)
 
 let messagesId = nanoid()
+let abortctl: AbortController = new AbortController()
 
 const messagesHistoryFiltered = computed(() => {
   return messagesHistory.value.filter((item) => {
@@ -118,6 +119,8 @@ async function chatComplete () {
       model: model.value,
       total_tokens: 0
     })
+
+    abortctl = new AbortController()
     
     const res = await fetch(`https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions`, {
       method: 'POST',
@@ -131,7 +134,8 @@ async function chatComplete () {
         max_tokens: 2048,
         stream: true,
         stream_options: {"include_usage": true}
-      })
+      }),
+      signal: abortctl.signal
     })
 
     if (main_content.value) {
@@ -204,7 +208,7 @@ async function chatComplete () {
 }
 
 async function stop () {
-
+  abortctl.abort()
 }
 
 function readMessages () {
