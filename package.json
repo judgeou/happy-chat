@@ -14,6 +14,7 @@
     "@vicons/utils": "^0.1.4",
     "gpt-3-encoder": "^1.1.4",
     "highlight.js": "^11.7.0",
+    "html2canvas": "^1.4.1",
     "lodash": "^4.17.21",
     "markdown-it-latex": "^0.2.0",
     "marked": "^14.1.3",

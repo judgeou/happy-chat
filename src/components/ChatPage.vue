@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { NCheckbox, NInput, NGrid, NGi, NButton, NCard, NInputGroup, NSpace, NLayout, NLayoutFooter, NModal, NList, NListItem, NScrollbar, NSkeleton, NSelect, NInputNumber, NFlex, useMessage } from 'naive-ui'
 import { reactive, ref, nextTick, computed, watch, Ref } from 'vue'
-import { TrashAlt, CopyRegular, Sync, CodeBranch } from '@vicons/fa'
+import { TrashAlt, CopyRegular, Sync, CodeBranch, Download } from '@vicons/fa'
 import { Icon } from '@vicons/utils'
 import IconOpenAI from '../assets/openai.vue'
 import { nanoid } from 'nanoid'
 import Markdown from './Markdown.vue'
+import html2canvas from 'html2canvas'
 
 interface MessagesHistoryItem {
   messagesId: string,
@@ -33,6 +34,7 @@ const messagesHistory = ref([] as MessagesHistoryItem[])
 const historyFilterWord = ref('')
 const model = ref('qwen2.5-72b-instruct')
 const max_message_number = ref(5)
+const exporting = ref(false)
 const apikey = load_from_localstorage('BAILIAN_API_KEY', ''); watch_save_to_localstorage('BAILIAN_API_KEY', apikey)
 const autoscroll = load_from_localstorage_boolean('AUTO_SCROLL', true); watch_save_to_localstorage('AUTO_SCROLL', autoscroll)
 
@@ -285,6 +287,48 @@ function deleteMessageItem (msg: ChatMessage) {
   const index = messages.indexOf(msg)
   messages.splice(index, 1)
 }
+
+async function exportImage () {
+  if (messages.length === 0) {
+    return
+  }
+
+  exporting.value = true
+  await nextTick()
+
+  const div = document.getElementById("main_content") as HTMLDivElement;
+  
+  // 保存原始滚动位置和样式
+  const originalScrollTop = div.scrollTop
+  const originalHeight = div.style.height
+  const originalOverflow = div.style.overflow
+
+  // 临时修改样式以捕获完整内容
+  div.style.height = 'auto'
+  div.style.overflow = 'visible'
+  
+  const canvas = await html2canvas(div, {
+    windowHeight: div.scrollHeight,
+    height: div.scrollHeight,
+    scrollY: -window.scrollY,
+    useCORS: true,
+    allowTaint: true
+  })
+
+  // 还原原始样式
+  div.style.height = originalHeight
+  div.style.overflow = originalOverflow
+  div.scrollTop = originalScrollTop
+
+  const dataURL = canvas.toDataURL('image/webp');
+  const tempLink = document.createElement('a');
+  tempLink.href = dataURL;
+  tempLink.download = `${messages[0].content.slice(0, 30)}.webp`;
+  tempLink.click();
+  tempLink.remove();
+
+  exporting.value = false
+}
 </script>
 
 <template>
@@ -350,7 +394,7 @@ function deleteMessageItem (msg: ChatMessage) {
       </n-space>
     </n-space>
 
-    <div v-if="messages.length > 0" ref="main_content" class="main-content" has-sider>
+    <div v-if="messages.length > 0" ref="main_content" id="main_content" class="main-content" :class="{ exporting: exporting }" has-sider>
       <n-grid :cols="24" :x-gap="12" :y-gap="12">
         <n-gi v-for="msg in messages" :span="24">
           <NCard :size="'small'" hoverable :embedded="msg.role !== 'user'">
@@ -406,6 +450,7 @@ function deleteMessageItem (msg: ChatMessage) {
 
 
     <n-layout-footer
+    v-if="!exporting"
     position="absolute"
     style="height: 64px; padding: 12px">
       <div class="chat-bar">
@@ -422,6 +467,10 @@ function deleteMessageItem (msg: ChatMessage) {
 
           <n-button style="height: 35.4px;" v-if="!isChating" type="primary" @click="chat">Chat</n-button>
           <n-button style="height: 35.4px;" v-if="isChating" :type="'error'" @click="stop">Stop</n-button>
+
+          <n-button v-if="messages.length > 0" type="info" ghost @click="exportImage">
+            <Icon><Download></Download></Icon>
+          </n-button>
         </n-input-group>
       </div>
     </n-layout-footer>
@@ -446,5 +495,9 @@ function deleteMessageItem (msg: ChatMessage) {
 .message-item {
   font-size: 16px;
   height: 100%;
+}
+.main-content.exporting {
+  height: 100%;
+  width: 100%;
 }
 </style>
