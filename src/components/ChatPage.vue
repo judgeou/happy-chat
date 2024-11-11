@@ -298,12 +298,12 @@ async function exportImage () {
 
   const div = document.getElementById("main_content") as HTMLDivElement;
   
-  // 保存原始滚动位置和样式
+  // 保存原始样式
   const originalScrollTop = div.scrollTop
   const originalHeight = div.style.height
   const originalOverflow = div.style.overflow
 
-  // 临时修改样式以捕获完整内容
+  // 临时修改样式
   div.style.height = 'auto'
   div.style.overflow = 'visible'
   
@@ -316,56 +316,46 @@ async function exportImage () {
       allowTaint: true
     })
 
-    const dataURL = canvas.toDataURL('image/webp', 0.9)
-    
-    // 移动端处理
-    if (/mobile/i.test(navigator.userAgent)) {
-      // 1. 尝试使用系统分享
-      if (navigator.share) {
-        const blob = await (await fetch(dataURL)).blob()
-        const file = new File([blob], `chat-${Date.now()}.webp`, { type: 'image/webp' })
-        try {
-          await navigator.share({
-            files: [file]
-          })
-          return
-        } catch (err) {
-          console.log('分享失败，尝试其他方式')
-        }
+    // 将 canvas 转换为 blob
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        throw new Error('Canvas to Blob conversion failed')
       }
       
-      // 2. 如果不支持分享，创建新窗口显示图片
-      const newWindow = window.open()
-      if (newWindow) {
-        newWindow.document.write(`
-          <html>
-            <head>
-              <title>长按图片保存</title>
-              <meta name="viewport" content="width=device-width,initial-scale=1">
-              <style>
-                body { margin: 0; display: flex; justify-content: center; align-items: center; background: #f5f5f5; }
-                img { max-width: 100%; height: auto; }
-                .tip { position: fixed; top: 10px; left: 0; right: 0; text-align: center; background: rgba(0,0,0,0.7); color: white; padding: 10px; }
-              </style>
-            </head>
-            <body>
-              <div class="tip">长按图片可保存</div>
-              <img src="${dataURL}" alt="聊天记录">
-            </body>
-          </html>
-        `)
+      const blobUrl = URL.createObjectURL(blob)
+      const filename = `${messages[0].content.slice(0, 30)}.webp`
+      
+      // 移动端处理
+      if (/mobile/i.test(navigator.userAgent)) {
+        const img = document.createElement('img')
+        img.src = blobUrl
+        img.alt = filename
+        img.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          background: rgba(0, 0, 0, 0.8);
+          z-index: 9999;
+        `
+        img.addEventListener('click', () => {
+          img.remove()
+          URL.revokeObjectURL(blobUrl)
+        })
+        document.body.appendChild(img)
       } else {
-        // 3. 如果无法打开新窗口，直接在当前页面打开
-        window.location.href = dataURL
+        // PC端下载
+        const tempLink = document.createElement('a')
+        tempLink.href = blobUrl
+        tempLink.download = filename
+        tempLink.click()
+        tempLink.remove()
+        // 清理 blob URL
+        URL.revokeObjectURL(blobUrl)
       }
-    } else {
-      // PC端保持原来的下载方式
-      const tempLink = document.createElement('a')
-      tempLink.href = dataURL
-      tempLink.download = `${messages[0].content.slice(0, 30)}.webp`
-      tempLink.click()
-      tempLink.remove()
-    }
+    }, 'image/webp', 0.9)
   } catch (err) {
     msg_ctl.error('导出失败：' + err)
   } finally {
