@@ -307,27 +307,75 @@ async function exportImage () {
   div.style.height = 'auto'
   div.style.overflow = 'visible'
   
-  const canvas = await html2canvas(div, {
-    windowHeight: div.scrollHeight,
-    height: div.scrollHeight,
-    scrollY: -window.scrollY,
-    useCORS: true,
-    allowTaint: true
-  })
+  try {
+    const canvas = await html2canvas(div, {
+      windowHeight: div.scrollHeight,
+      height: div.scrollHeight,
+      scrollY: -window.scrollY,
+      useCORS: true,
+      allowTaint: true
+    })
 
-  // 还原原始样式
-  div.style.height = originalHeight
-  div.style.overflow = originalOverflow
-  div.scrollTop = originalScrollTop
+    const dataURL = canvas.toDataURL('image/webp', 0.9)
+    
+    // 移动端处理
+    if (/mobile/i.test(navigator.userAgent)) {
+      // 1. 尝试使用系统分享
+      if (navigator.share) {
+        const blob = await (await fetch(dataURL)).blob()
+        const file = new File([blob], `chat-${Date.now()}.webp`, { type: 'image/webp' })
+        try {
+          await navigator.share({
+            files: [file]
+          })
+          return
+        } catch (err) {
+          console.log('分享失败，尝试其他方式')
+        }
+      }
+      
+      // 2. 如果不支持分享，创建新窗口显示图片
+      const newWindow = window.open()
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>长按图片保存</title>
+              <meta name="viewport" content="width=device-width,initial-scale=1">
+              <style>
+                body { margin: 0; display: flex; justify-content: center; align-items: center; background: #f5f5f5; }
+                img { max-width: 100%; height: auto; }
+                .tip { position: fixed; top: 10px; left: 0; right: 0; text-align: center; background: rgba(0,0,0,0.7); color: white; padding: 10px; }
+              </style>
+            </head>
+            <body>
+              <div class="tip">长按图片可保存</div>
+              <img src="${dataURL}" alt="聊天记录">
+            </body>
+          </html>
+        `)
+      } else {
+        // 3. 如果无法打开新窗口，直接在当前页面打开
+        window.location.href = dataURL
+      }
+    } else {
+      // PC端保持原来的下载方式
+      const tempLink = document.createElement('a')
+      tempLink.href = dataURL
+      tempLink.download = `${messages[0].content.slice(0, 30)}.webp`
+      tempLink.click()
+      tempLink.remove()
+    }
+  } catch (err) {
+    msg_ctl.error('导出失败：' + err)
+  } finally {
+    // 还原原始样式
+    div.style.height = originalHeight
+    div.style.overflow = originalOverflow
+    div.scrollTop = originalScrollTop
 
-  const dataURL = canvas.toDataURL('image/webp');
-  const tempLink = document.createElement('a');
-  tempLink.href = dataURL;
-  tempLink.download = `${messages[0].content.slice(0, 30)}.webp`;
-  tempLink.click();
-  tempLink.remove();
-
-  exporting.value = false
+    exporting.value = false
+  }
 }
 </script>
 
