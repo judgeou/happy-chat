@@ -32,10 +32,21 @@ const isChating = ref(false)
 const isShowHistory = ref(false)
 const messagesHistory = ref([] as MessagesHistoryItem[])
 const historyFilterWord = ref('')
+const openapi_provider = ref('bailian')
+const openapi_provider_list = [{
+  label: '阿里云百炼',
+  value: 'bailian',
+  url: `https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions`
+}, {
+  label: 'openrouter',
+  value: 'openrouter',
+  url: `https://openrouter.ai/api/v1/chat/completions`
+}]
 const model = ref('qwen2.5-72b-instruct')
 const max_message_number = ref(5)
 const exporting = ref(false)
 const apikey = load_from_localstorage('BAILIAN_API_KEY', ''); watch_save_to_localstorage('BAILIAN_API_KEY', apikey)
+const openrouter_apikey = load_from_localstorage('OPENROUTER_API_KEY', ''); watch_save_to_localstorage('OPENROUTER_API_KEY', openrouter_apikey)
 const autoscroll = load_from_localstorage_boolean('AUTO_SCROLL', true); watch_save_to_localstorage('AUTO_SCROLL', autoscroll)
 
 let messagesId = nanoid()
@@ -123,12 +134,17 @@ async function chatComplete () {
     })
 
     abortctl = new AbortController()
+    const url = openapi_provider_list.find(item => item.value === openapi_provider.value)?.url
+    const apikey_value = openapi_provider.value === 'bailian' ? apikey.value : openrouter_apikey.value
+    if (!url) {
+      throw new Error('未找到API地址')
+    }
     
-    const res = await fetch(`https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions`, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apikey.value
+        'Authorization': 'Bearer ' + apikey_value
       },
       body: JSON.stringify({
         model: model.value,
@@ -414,13 +430,21 @@ async function exportImage () {
           { label: '通义千问 qwen2-72b', value: 'qwen2-72b-instruct' },
           { label: '通义千问 turbo', value: 'qwen-turbo' },
           { label: '通义千问 plus', value: 'qwen-plus' },
-          { label: '通义千问 max', value: 'qwen-max' }
+          { label: '通义千问 max', value: 'qwen-max' },
+          { label: 'claude 3.5 sonnet', value: 'anthropic/claude-3.5-sonnet:beta' }
         ]"></n-select>
+
+        <n-select style="width: 200px;" v-model:value="openapi_provider" :options="openapi_provider_list"></n-select>
       </n-space>
 
       <n-space :justify="'center'">
-        <n-input type="password" placeholder="API Key" v-model:value="apikey" ></n-input>
+        阿里云百炼APIKEY <n-input type="password" placeholder="API Key" v-model:value="apikey" ></n-input>
         <a href="https://bailian.console.aliyun.com/?apiKey=1#/api-key" target="_blank">获取 API KEY</a>
+      </n-space>
+
+      <n-space :justify="'center'">
+        openrouter APIKEY <n-input type="password" placeholder="API Key" v-model:value="openrouter_apikey" ></n-input>
+        <a href="https://openrouter.ai/settings/keys" target="_blank">获取 API KEY</a>
       </n-space>
 
       <n-space :justify="'center'">
